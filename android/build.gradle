@@ -18,4 +18,11 @@ buildscript {
     }
 }
 
+
+tasks.whenTaskAdded { task ->
+    if (task.name == 'generateDebugLintReportModel') {
+        task.dependsOn 'copyReactNativeVectorIconFonts'
+    }
+}
+
 apply plugin: "com.facebook.react.rootproject"
