@@ -1,22 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Button, Animated, PanResponder } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';  // Feather 아이콘 임포트
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Button, Animated, PanResponder, Switch } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
 import Modal from 'react-native-modal';
 
 const TimerCard = ({ id, onDelete }) => {
-  const [time, setTime] = useState(0);
+  const [time, setTime] = useState(60); // 기본 시간 60초로 설정
   const [isRunning, setIsRunning] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [timerName, setTimerName] = useState('타이머 이름');
   const [nameInputValue, setNameInputValue] = useState(timerName);
+  const [showDecimals, setShowDecimals] = useState(false);
   const [pressStart, setPressStart] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const pan = useRef(new Animated.ValueXY()).current;
-  const longPressDuration = 1000; // 롱프레스 시간 1초로 설정
+  const longPressDuration = 1000;
   const longPressTimerRef = useRef(null);
-  const defaultTime = 30 * 60; // 기본 시간(30분)
+  const initialTime = useRef(60); // 초기 시간을 useRef로 관리
 
   useEffect(() => {
     let interval = null;
@@ -48,15 +49,21 @@ const TimerCard = ({ id, onDelete }) => {
 
   const resetTimer = () => {
     setIsRunning(false);
-    setTime(defaultTime); // 기본 시간으로 리셋
+    setTime(initialTime.current); // 초기 시간으로 리셋
+    setIsEnabled(false); //버튼 off
   };
 
   const saveTime = () => {
-    const timeInSeconds = parseInt(inputValue, 10) * 60;
-    setTime(timeInSeconds);
+    if (inputValue !== '') {
+      const timeInSeconds = parseInt(inputValue, 10) * 60;
+      setTime(timeInSeconds);
+      initialTime.current = timeInSeconds; // 초기 시간 업데이트
+      setIsRunning(false); //타이머 off
+      setIsEnabled(false); //버튼 off
+    }
     setIsModalVisible(false);
     setInputValue('');
-    setTimerName(nameInputValue); // 이름 저장
+    setTimerName(nameInputValue);
   };
 
   const toggleTimer = () => {
@@ -71,16 +78,15 @@ const TimerCard = ({ id, onDelete }) => {
   const handlePressIn = () => {
     setPressStart(Date.now());
     longPressTimerRef.current = setTimeout(() => {
-      if (!isDragging) { // 드래그가 아닌 경우에만 수정 창 열기
+      if (!isDragging) {
         setIsModalVisible(true);
       }
     }, longPressDuration);
   };
 
   const handlePressOut = () => {
-    clearTimeout(longPressTimerRef.current); // 롱프레스 타이머 취소
+    clearTimeout(longPressTimerRef.current);
     if (!isDragging && Date.now() - pressStart < longPressDuration) {
-      // 짧은 클릭이면서 드래그가 아닌 경우에만 스위치 토글
       toggleTimer();
     }
     setPressStart(null);
@@ -90,13 +96,10 @@ const TimerCard = ({ id, onDelete }) => {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (e, gestureState) => {
-        // 일정한 움직임이 있을 때 팬 핸들러를 활성화
-        return Math.abs(gestureState.dx) > 5;
-      },
+      onMoveShouldSetPanResponder: (e, gestureState) => Math.abs(gestureState.dx) > 5,
       onPanResponderGrant: () => {
-        setIsDragging(true); // 드래그 시작 시 설정
-        clearTimeout(longPressTimerRef.current); // 드래그가 시작되면 롱프레스 타이머를 취소
+        setIsDragging(true);
+        clearTimeout(longPressTimerRef.current);
         pan.setOffset({
           x: pan.x._value,
           y: pan.y._value,
@@ -104,27 +107,23 @@ const TimerCard = ({ id, onDelete }) => {
         pan.setValue({ x: 0, y: 0 });
       },
       onPanResponderMove: (e, gestureState) => {
-        // 드래그 범위 제한
         const dragX = Math.max(-80, Math.min(80, gestureState.dx));
         pan.setValue({ x: dragX, y: 0 });
       },
       onPanResponderRelease: (e, { dx }) => {
-        setIsDragging(false); // 드래그가 끝난 후 설정
-        pan.flattenOffset(); // 오프셋을 플래튼
+        setIsDragging(false);
+        pan.flattenOffset();
 
         if (dx < -100) {
-          // 왼쪽으로 스와이프, 삭제 동작 수행
           onDelete(id);
         } else if (dx > 100) {
-          // 오른쪽으로 스와이프, 리셋 동작 수행
           resetTimer();
         }
 
-        // 원래 위치로 되돌리기 위한 애니메이션
         Animated.spring(pan, {
-          toValue: { x: 0, y: 0 }, // (0, 0) 위치로 되돌림
-          friction: 7, // 부드러운 반동을 위한 마찰 설정
-          tension: 40, // 반동 효과를 위한 텐션 설정
+          toValue: { x: 0, y: 0 },
+          friction: 7,
+          tension: 40,
           useNativeDriver: false,
         }).start();
       },
@@ -154,10 +153,10 @@ const TimerCard = ({ id, onDelete }) => {
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
         >
-          <Text style={styles.timeText}>{formatTime(time)}</Text>
+          <Text style={styles.timeText}>{formatTime(time, showDecimals)}</Text>
           <View style={styles.timerInfo}>
             <Text style={styles.timerName}>{timerName}</Text>
-            <Text style={styles.timerDetails}>{formatTime(time)}</Text>
+            <Text style={styles.timerDetails}>{formatTime(time, showDecimals)}</Text>
           </View>
           <TouchableOpacity style={styles.customSwitch} onPress={toggleTimer}>
             <View style={[styles.circle, isEnabled && styles.circleEnabled]} />
@@ -166,11 +165,11 @@ const TimerCard = ({ id, onDelete }) => {
       </Animated.View>
 
       <Animated.View style={[styles.actionContainer, styles.refreshContainer, { opacity: refreshIconOpacity }]}>
-        <Icon name="refresh-cw" size={30} color="#007BFF" />
+        <Icon name="refresh-cw" size={24} color="#007BFF" />
       </Animated.View>
 
       <Animated.View style={[styles.actionContainer, styles.deleteContainer, { opacity: deleteIconOpacity }]}>
-        <Icon name="trash-2" size={30} color="red" />
+        <Icon name="trash-2" size={24} color="red" />
       </Animated.View>
 
       {/* 수정 창 (Modal) */}
@@ -194,6 +193,13 @@ const TimerCard = ({ id, onDelete }) => {
             value={inputValue}
             onChangeText={setInputValue}
           />
+          <View style={styles.switchContainer}>
+            <Text>소수점 표기</Text>
+            <Switch
+              value={showDecimals}
+              onValueChange={setShowDecimals}
+            />
+          </View>
           <View style={styles.modalButtons}>
             <Button title="저장" onPress={saveTime} />
             <Button title="취소" onPress={() => setIsModalVisible(false)} color="red" />
@@ -204,17 +210,21 @@ const TimerCard = ({ id, onDelete }) => {
   );
 };
 
-// 초를 분과 초로 포맷하는 함수
-const formatTime = (seconds) => {
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+// 초를 시, 분, 초로 포맷하는 함수
+const formatTime = (seconds, showDecimals) => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = showDecimals ? (seconds % 60).toFixed(2) : Math.floor(seconds % 60);
+
+  return hours > 0
+    ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${showDecimals ? String(secs).padStart(5, '0') : String(secs).padStart(2, '0')}`
+    : `${String(minutes).padStart(2, '0')}:${showDecimals ? String(secs).padStart(5, '0') : String(secs).padStart(2, '0')}`;
 };
 
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    position: 'relative', // 액션 아이콘들이 이 컨테이너를 기준으로 배치되도록 함
+    position: 'relative',
   },
   card: {
     backgroundColor: '#fff',
@@ -227,21 +237,22 @@ const styles = StyleSheet.create({
     shadowOpacity:  0.2,
     shadowRadius: 5,
     elevation: 4,
-    zIndex: 1, // 카드가 액션 아이콘들 위에 위치하도록 설정
+    zIndex: 1,
   },
   cardContent: {
     flexDirection: 'row',
-    justifyContent:    'space-between',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
   timeText: {
-    fontSize: 36,  // 시간 텍스트 크기를 줄여 세로 공간을 절약
+    fontSize: 36,
     fontWeight: 'bold',
-    textAlign: 'left',  // 텍스트를 왼쪽으로 정렬
+    textAlign: 'left',
     flex: 1,
+    whiteSpace: 'nowrap', // 소수점 줄바꿈 방지
   },
   timerInfo: {
-    alignItems: 'flex-end', // 이름과 시간을 오른쪽 아래에 배치
+    alignItems: 'flex-end',
     flex: 1,
   },
   timerName: {
@@ -268,16 +279,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   circleEnabled: {
-    backgroundColor: '#007BFF',  // 활성화된 상태의 원 색상
-    alignSelf: 'flex-end',  // 활성화된 상태에서 원을 오른쪽으로 이동
+    backgroundColor: '#007BFF',
+    alignSelf: 'flex-end',
   },
   actionContainer: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     width: 100,
-    height: 60, // 높이를 줄여서 세로로 얇게 조정
-    padding: 20,
+    height: 68,
+    padding: 15,
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -288,15 +299,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
-    zIndex: 0, // 아이콘이 카드 뒤에 위치하도록 설정
+    zIndex: 0,
   },
   refreshContainer: {
     left: 0,
-    backgroundColor: '#e0f7fa', // 새로고침 아이콘의 배경색(밝은 파란색)
+    backgroundColor: '#e0f7fa',
   },
   deleteContainer: {
     right: 0,
-    backgroundColor: '#ffebee', // 삭제 아이콘의 배경색(밝은 빨간색)
+    backgroundColor: '#ffebee',
   },
   modal: {
     justifyContent: 'flex-end',
@@ -322,6 +333,13 @@ const styles = StyleSheet.create({
     width: '100%',
     textAlign: 'center',
   },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 15,
+  },
   modalButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -330,4 +348,3 @@ const styles = StyleSheet.create({
 });
 
 export default TimerCard;
-
