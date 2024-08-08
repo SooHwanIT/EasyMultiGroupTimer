@@ -18,9 +18,11 @@ const TimerCard = ({ id, onDelete }) => {
     const [isRunning, setIsRunning] = useState(false);
     const [isEnabled, setIsEnabled] = useState(false);
     const [isModalVisible, setIsModalVisible] = useState(false);
-    const [inputValue, setInputValue] = useState('');
     const [timerName, setTimerName] = useState('타이머 이름');
     const [nameInputValue, setNameInputValue] = useState(timerName);
+    const [hours, setHours] = useState('');
+    const [minutes, setMinutes] = useState('');
+    const [seconds, setSeconds] = useState('');
     const [showDecimals, setShowDecimals] = useState(false);
     const [pressStart, setPressStart] = useState(null);
     const isDragging = useRef(false); // Ref로 드래깅 상태 유지
@@ -40,16 +42,15 @@ const TimerCard = ({ id, onDelete }) => {
                         setIsRunning(false);
                         return 0;
                     }
-                    return prevTime - 1;
+                    return (prevTime - 0.1).toFixed(1); // 0.1초씩 감소
                 });
-            }, 1000);
+            }, 100); // 100ms마다 실행
         } else {
             clearInterval(interval);
         }
 
         return () => clearInterval(interval);
     }, [isRunning]);
-
 
     const startTimer = () => {
         if (time > 0) {
@@ -68,15 +69,21 @@ const TimerCard = ({ id, onDelete }) => {
     };
 
     const saveTime = () => {
-        if (inputValue !== '') {
-            const timeInSeconds = parseInt(inputValue, 10) * 60;
+        const timeInSeconds =
+            (parseInt(hours, 10) || 0) * 3600 +
+            (parseInt(minutes, 10) || 0) * 60 +
+            (parseInt(seconds, 10) || 0);
+
+        if (timeInSeconds > 0) {
             setTime(timeInSeconds);
             initialTime.current = timeInSeconds;
             setIsRunning(false);
             setIsEnabled(false);
         }
         setIsModalVisible(false);
-        setInputValue('');
+        setHours('');
+        setMinutes('');
+        setSeconds('');
         setTimerName(nameInputValue);
     };
 
@@ -84,7 +91,7 @@ const TimerCard = ({ id, onDelete }) => {
         setIsEnabled(prev => !prev);
     };
 
-// useEffect를 추가하여 isEnabled가 변경될 때마다 타이머를 제어
+    // useEffect를 추가하여 isEnabled가 변경될 때마다 타이머를 제어
     useEffect(() => {
         if (isEnabled) {
             startTimer();
@@ -207,8 +214,6 @@ const TimerCard = ({ id, onDelete }) => {
             >
                 <View
                     style={styles.cardContent}
-                  //onPressIn={() => handlePress(true)}
-                  //onPressOut={() => handlePress(false)}
                 >
                     <Text style={styles.timeText}>{formatTime(time, showDecimals)}</Text>
                     <View style={styles.timerInfo}>
@@ -256,13 +261,29 @@ const TimerCard = ({ id, onDelete }) => {
                         value={nameInputValue}
                         onChangeText={setNameInputValue}
                     />
-                    <TextInput
-                        style={styles.input}
-                        placeholder="분"
-                        keyboardType="numeric"
-                        value={inputValue}
-                        onChangeText={setInputValue}
-                    />
+                    <View style={styles.timeInputContainer}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="시"
+                            keyboardType="numeric"
+                            value={hours}
+                            onChangeText={setHours}
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="분"
+                            keyboardType="numeric"
+                            value={minutes}
+                            onChangeText={setMinutes}
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="초"
+                            keyboardType="numeric"
+                            value={seconds}
+                            onChangeText={setSeconds}
+                        />
+                    </View>
                     <View style={styles.switchContainer}>
                         <Text>소수점 표기</Text>
                         <Switch value={showDecimals} onValueChange={setShowDecimals} />
@@ -285,18 +306,18 @@ const formatTime = (seconds, showDecimals) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = showDecimals
-        ? (seconds % 60).toFixed(2)
+        ? (seconds % 60).toFixed(1) // 소수점 첫째 자리까지 표시
         : Math.floor(seconds % 60);
 
     return hours > 0
         ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${
             showDecimals
-                ? String(secs).padStart(5, '0')
+                ? String(secs).padStart(4, '0') // 소수점 포함 시 길이를 맞추기 위해 `padStart` 사용
                 : String(secs).padStart(2, '0')
         }`
         : `${String(minutes).padStart(2, '0')}:${
             showDecimals
-                ? String(secs).padStart(5, '0')
+                ? String(secs).padStart(4, '0')
                 : String(secs).padStart(2, '0')
         }`;
 };
@@ -329,7 +350,8 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         textAlign: 'left',
         flex: 1,
-        whiteSpace: 'nowrap',
+        includeFontPadding: false,  // 추가된 부분: 텍스트가 잘리거나 간격이 이상하게 되지 않도록 함
+        textAlignVertical: 'center',  // 추가된 부분: 텍스트를 중앙 정렬
     },
     timerInfo: {
         alignItems: 'flex-end',
@@ -404,13 +426,18 @@ const styles = StyleSheet.create({
         fontSize: 20,
         marginBottom: 15,
     },
+    timeInputContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginBottom: 15,
+    },
     input: {
         borderWidth: 1,
         borderColor: '#ddd',
         padding: 10,
-        marginBottom: 15,
         borderRadius: 5,
-        width: '100%',
+        width: '30%', // 시, 분, 초 input이 한 줄에 나란히 보이게 함
         textAlign: 'center',
     },
     switchContainer: {
