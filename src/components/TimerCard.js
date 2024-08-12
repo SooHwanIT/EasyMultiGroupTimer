@@ -13,6 +13,9 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import Modal from 'react-native-modal';
 import {Picker} from '@react-native-picker/picker';
+import { WheelPicker } from 'react-native-wheel-picker-android';
+
+
 const TimerCard = ({id, onDelete}) => {
   const [time, setTime] = useState(60);
   const [isRunning, setIsRunning] = useState(false);
@@ -20,9 +23,9 @@ const TimerCard = ({id, onDelete}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [timerName, setTimerName] = useState('타이머 이름');
   const [nameInputValue, setNameInputValue] = useState(timerName);
-  const [hours, setHours] = useState('');
-  const [minutes, setMinutes] = useState('');
-  const [seconds, setSeconds] = useState('');
+  const [hours, setHours] = useState(0);
+  const [minutes, setMinutes] = useState(0);
+  const [seconds, setSeconds] = useState(0);
   const [showDecimals, setShowDecimals] = useState(false);
   const [pressStart, setPressStart] = useState(null);
   const isDragging = useRef(false); // Ref로 드래깅 상태 유지
@@ -69,21 +72,10 @@ const TimerCard = ({id, onDelete}) => {
   };
 
   const saveTime = () => {
-    const timeInSeconds =
-      (parseInt(hours, 10) || 0) * 3600 +
-      (parseInt(minutes, 10) || 0) * 60 +
-      (parseInt(seconds, 10) || 0);
-
-    if (timeInSeconds > 0) {
-      setTime(timeInSeconds);
-      initialTime.current = timeInSeconds;
-      setIsRunning(false);
-      setIsEnabled(false);
-    }
+    const timeInSeconds = hours * 3600 + minutes * 60 + seconds;
+    setTime(timeInSeconds);
+    initialTime.current = timeInSeconds;
     setIsModalVisible(false);
-    setHours('');
-    setMinutes('');
-    setSeconds('');
     setTimerName(nameInputValue);
   };
 
@@ -156,6 +148,7 @@ const TimerCard = ({id, onDelete}) => {
             // Ref로 드래깅 상태 확인
             setIsModalVisible(true);
           }
+          isDragging.current = true;
         }, longPressDuration);
       },
 
@@ -224,7 +217,14 @@ const TimerCard = ({id, onDelete}) => {
         {...panResponder.panHandlers}
         style={[styles.card, {transform: pan.getTranslateTransform()}]}>
         <View style={styles.cardContent}>
-          <Text style={styles.timeText}>{formatTime(time, showDecimals)}</Text>
+          <Text
+              style={styles.timeText}
+              adjustsFontSizeToFit
+              numberOfLines={1} // 한 줄로 유지
+              minimumFontScale={0.5} // 폰트 크기 조정 시 최소 크기 설정
+          >
+            {formatTime(time, showDecimals)}
+          </Text>
           <View style={styles.timerInfo}>
             <Text style={styles.timerName}>{timerName}</Text>
             <Text style={styles.timerDetails}>
@@ -262,42 +262,25 @@ const TimerCard = ({id, onDelete}) => {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>타이머 수정</Text>
           <View style={styles.timePickerContainer}>
-            <Picker
-              selectedValue={hours}
-              style={styles.picker}
-              onValueChange={itemValue => setHours(itemValue)}>
-              {Array.from({length: 100}, (_, i) => (
-                <Picker.Item
-                  key={i}
-                  label={String(i).padStart(2, '0')}
-                  value={String(i).padStart(2, '0')}
-                />
-              ))}
-            </Picker>
-            <Picker
-              selectedValue={minutes}
-              style={styles.picker}
-              onValueChange={itemValue => setMinutes(itemValue)}>
-              {Array.from({length: 60}, (_, i) => (
-                <Picker.Item
-                  key={i}
-                  label={String(i).padStart(2, '0')}
-                  value={String(i).padStart(2, '0')}
-                />
-              ))}
-            </Picker>
-            <Picker
-              selectedValue={seconds}
-              style={styles.picker}
-              onValueChange={itemValue => setSeconds(itemValue)}>
-              {Array.from({length: 60}, (_, i) => (
-                <Picker.Item
-                  key={i}
-                  label={String(i).padStart(2, '0')}
-                  value={String(i).padStart(2, '0')}
-                />
-              ))}
-            </Picker>
+            {/* 휠 피커로 변경된 시간 설정 */}
+            <WheelPicker
+                selectedItem={hours}
+                data={Array.from({length: 100}, (_, i) => String(i).padStart(2, '0'))}
+                onItemSelected={index => setHours(index)}
+                style={styles.picker}
+            />
+            <WheelPicker
+                selectedItem={minutes}
+                data={Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'))}
+                onItemSelected={index => setMinutes(index)}
+                style={styles.picker}
+            />
+            <WheelPicker
+                selectedItem={seconds}
+                data={Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'))}
+                onItemSelected={index => setSeconds(index)}
+                style={styles.picker}
+            />
           </View>
           <View style={styles.switchContainer}>
             <Text>소수점 표기</Text>
