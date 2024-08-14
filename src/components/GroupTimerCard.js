@@ -10,8 +10,9 @@ if (Platform.OS === 'android') {
 
 
 const GroupTimerCard = () => {
-    const [timers, setTimers] = useState([{ id: UUID.v4() }, { id: UUID.v4() }, { id: UUID.v4() }]);
+    const [timers, setTimers] = useState([]);
     const [groupName, setGroupName] = useState('그룹 이름');
+
     const [nameInputValue, setNameInputValue] = useState(groupName);
 
 
@@ -20,16 +21,40 @@ const GroupTimerCard = () => {
     const timerRefs = useRef([]);
 
     const handleStartAll = () => {
-        timerRefs.current.forEach(ref => ref?.startTimer()); // 모든 타이머 시작
-    };
+        const startAllTimers = () => {
+            timerRefs.current.forEach(ref => ref?.startTimer());
+        };
 
+        if ('requestAnimationFrame' in window) {
+            requestAnimationFrame(startAllTimers);
+        } else {
+            startAllTimers();
+        }
+    };
     const handlePauseAll = () => {
-        timerRefs.current.forEach(ref => ref?.pauseTimer()); // 모든 타이머 멈춤
+        const pauseAllTimers = () => {
+            timerRefs.current.forEach(ref => ref?.pauseTimer());
+        };
+
+        if ('requestAnimationFrame' in window) {
+            requestAnimationFrame(pauseAllTimers);
+        } else {
+            pauseAllTimers();
+        }
     };
 
     const handleResetAll = () => {
-        timerRefs.current.forEach(ref => ref?.resetTimer()); // 모든 타이머 초기화
+        const resetAllTimers = () => {
+            timerRefs.current.forEach(ref => ref?.resetTimer());
+        };
+
+        if ('requestAnimationFrame' in window) {
+            requestAnimationFrame(resetAllTimers);
+        } else {
+            resetAllTimers();
+        }
     };
+
 
     const handleDeleteTimer = id => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); // 애니메이션 설정

@@ -237,9 +237,6 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
                 {formatTime(initialTime.current, showDecimals)}
               </Text>
             </View>
-            <TouchableOpacity style={styles.customSwitch}>
-              <View style={[styles.circle, isEnabled && styles.circleEnabled]} />
-            </TouchableOpacity>
           </View>
         </Animated.View>
 
@@ -364,25 +361,6 @@ const styles = StyleSheet.create({
   timerDetails: {
     fontSize: 12,
     color: '#888',
-  },
-  customSwitch: {
-    width: 40,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#ddd',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-    marginLeft: 10,
-  },
-  circle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: '#fff',
-  },
-  circleEnabled: {
-    backgroundColor: '#007BFF',
-    alignSelf: 'flex-end',
   },
   actionContainer: {
     position: 'absolute',
