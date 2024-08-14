@@ -112,10 +112,10 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
       clearTimeout(longPressTimerRef.current);
       const duration = Date.now() - pressStart;
       console.log(
-        'Press out, duration:',
-        duration,
-        'isDragging:',
-        isDragging.current,
+          'Press out, duration:',
+          duration,
+          'isDragging:',
+          isDragging.current,
       );
 
       if (!isDragging.current) {
@@ -128,82 +128,82 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
   };
 
   const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => {
-        console.log(
-          'onStartShouldSetPanResponder: 터치 시작 시 PanResponder 활성화 여부 결정',
-        );
-        return true;
-      },
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => {
+          console.log(
+              'onStartShouldSetPanResponder: 터치 시작 시 PanResponder 활성화 여부 결정',
+          );
+          return true;
+        },
 
-      onMoveShouldSetPanResponder: (_, gestureState) =>
-        Math.abs(gestureState.dx) > 5,
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+            Math.abs(gestureState.dx) > 5,
 
-      onPanResponderGrant: () => {
-        isDragging.current = false;
-        handlePress(true); // Press In
-        clearTimeout(longPressTimerRef.current);
-        pan.setOffset({
-          x: pan.x._value,
-          y: pan.y._value,
-        });
-        pan.setValue({x: 0, y: 0});
-        setPressStart(Date.now());
-        longPressTimerRef.current = setTimeout(() => {
-          if (!isDragging.current) {
-            // Ref로 드래깅 상태 확인
-            setIsModalVisible(true);
+        onPanResponderGrant: () => {
+          isDragging.current = false;
+          handlePress(true); // Press In
+          clearTimeout(longPressTimerRef.current);
+          pan.setOffset({
+            x: pan.x._value,
+            y: pan.y._value,
+          });
+          pan.setValue({x: 0, y: 0});
+          setPressStart(Date.now());
+          longPressTimerRef.current = setTimeout(() => {
+            if (!isDragging.current) {
+              // Ref로 드래깅 상태 확인
+              setIsModalVisible(true);
+            }
+            isDragging.current = true;
+          }, longPressDuration);
+        },
+
+        onPanResponderMove: (_, gestureState) => {
+          isDragging.current = true; // Ref로 드래깅 상태 설정
+          console.log(
+              'onPanResponderMove: PanResponder 이동 isDragging : ',
+              isDragging.current,
+          );
+          const dragX = Math.max(-80, Math.min(80, gestureState.dx));
+          pan.setValue({x: dragX, y: 0});
+        },
+
+        onPanResponderRelease: (e, gestureState) => {
+          console.log('onPanResponderRelease: PanResponder 해제');
+          handlePress(false); // Press Out
+          pan.flattenOffset();
+
+          if (gestureState.dx < -100) {
+            console.log('Swiped left, calling onDelete');
+            onDelete(id);
+          } else if (gestureState.dx > 100) {
+            console.log('Swiped right, calling resetTimer');
+            resetTimer();
           }
-          isDragging.current = true;
-        }, longPressDuration);
-      },
 
-      onPanResponderMove: (_, gestureState) => {
-        isDragging.current = true; // Ref로 드래깅 상태 설정
-        console.log(
-          'onPanResponderMove: PanResponder 이동 isDragging : ',
-          isDragging.current,
-        );
-        const dragX = Math.max(-80, Math.min(80, gestureState.dx));
-        pan.setValue({x: dragX, y: 0});
-      },
+          Animated.spring(pan, {
+            toValue: {x: 0, y: 0},
+            friction: 7,
+            tension: 40,
+            useNativeDriver: false,
+          }).start();
+        },
 
-      onPanResponderRelease: (e, gestureState) => {
-        console.log('onPanResponderRelease: PanResponder 해제');
-        handlePress(false); // Press Out
-        pan.flattenOffset();
+        onPanResponderTerminate: () => {
+          console.log('onPanResponderTerminate: PanResponder 종료');
+          handlePress(false); // Press Out
+        },
 
-        if (gestureState.dx < -100) {
-          console.log('Swiped left, calling onDelete');
-          onDelete(id);
-        } else if (gestureState.dx > 100) {
-          console.log('Swiped right, calling resetTimer');
-          resetTimer();
-        }
+        onPanResponderTerminationRequest: () => {
+          console.log('onPanResponderTerminationRequest: PanResponder 종료 요청');
+          return true;
+        },
 
-        Animated.spring(pan, {
-          toValue: {x: 0, y: 0},
-          friction: 7,
-          tension: 40,
-          useNativeDriver: false,
-        }).start();
-      },
-
-      onPanResponderTerminate: () => {
-        console.log('onPanResponderTerminate: PanResponder 종료');
-        handlePress(false); // Press Out
-      },
-
-      onPanResponderTerminationRequest: () => {
-        console.log('onPanResponderTerminationRequest: PanResponder 종료 요청');
-        return true;
-      },
-
-      // onShouldBlockNativeResponder: () => {
-      //     console.log('onShouldBlockNativeResponder: 네이티브 리스너 이벤트 차단 여부 결정');
-      //     return false;
-      // },
-    }),
+        // onShouldBlockNativeResponder: () => {
+        //     console.log('onShouldBlockNativeResponder: 네이티브 리스너 이벤트 차단 여부 결정');
+        //     return false;
+        // },
+      }),
   ).current;
 
   const refreshIconOpacity = pan.x.interpolate({
@@ -218,95 +218,95 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
     extrapolate: 'clamp',
   });
   return (
-    <View style={styles.container}>
-      <Animated.View
-        {...panResponder.panHandlers}
-        style={[styles.card, {transform: pan.getTranslateTransform()}]}>
-        <View style={styles.cardContent}>
-          <Text
-              style={styles.timeText}
-              adjustsFontSizeToFit
-              numberOfLines={1} // 한 줄로 유지
-              minimumFontScale={0.5} // 폰트 크기 조정 시 최소 크기 설정
-          >
-            {formatTime(time, showDecimals)}
-          </Text>
-          <View style={styles.timerInfo}>
-            <Text style={styles.timerName}>{timerName}</Text>
-            <Text style={styles.timerDetails}>
-              {formatTime(initialTime.current, showDecimals)}
+      <View style={styles.container}>
+        <Animated.View
+            {...panResponder.panHandlers}
+            style={[styles.card, {transform: pan.getTranslateTransform()}]}>
+          <View style={styles.cardContent}>
+            <Text
+                style={styles.timeText}
+                adjustsFontSizeToFit
+                numberOfLines={1} // 한 줄로 유지
+                minimumFontScale={0.5} // 폰트 크기 조정 시 최소 크기 설정
+            >
+              {formatTime(time, showDecimals)}
             </Text>
+            <View style={styles.timerInfo}>
+              <Text style={styles.timerName}>{timerName}</Text>
+              <Text style={styles.timerDetails}>
+                {formatTime(initialTime.current, showDecimals)}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.customSwitch}>
+              <View style={[styles.circle, isEnabled && styles.circleEnabled]} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.customSwitch}>
-            <View style={[styles.circle, isEnabled && styles.circleEnabled]} />
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
+        </Animated.View>
 
-      <Animated.View
-        style={[
-          styles.actionContainer,
-          styles.refreshContainer,
-          {opacity: refreshIconOpacity},
-        ]}>
-        <Icon name="refresh-cw" size={24} color="#007BFF" />
-      </Animated.View>
+        <Animated.View
+            style={[
+              styles.actionContainer,
+              styles.refreshContainer,
+              {opacity: refreshIconOpacity},
+            ]}>
+          <Icon name="refresh-cw" size={24} color="#007BFF" />
+        </Animated.View>
 
-      <Animated.View
-        style={[
-          styles.actionContainer,
-          styles.deleteContainer,
-          {opacity: deleteIconOpacity},
-        ]}>
-        <Icon name="trash-2" size={24} color="red" />
-      </Animated.View>
+        <Animated.View
+            style={[
+              styles.actionContainer,
+              styles.deleteContainer,
+              {opacity: deleteIconOpacity},
+            ]}>
+          <Icon name="trash-2" size={24} color="red" />
+        </Animated.View>
 
-      <Modal
-        isVisible={isModalVisible}
-        onBackdropPress={() => setIsModalVisible(false)}
-        style={styles.modal}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>타이머 수정</Text>
-          <View style={styles.timePickerContainer}>
-            {/* 휠 피커로 변경된 시간 설정 */}
-            <WheelPicker
-                selectedItem={hours}
-                data={Array.from({length: 100}, (_, i) => String(i).padStart(2, '0'))}
-                onItemSelected={index => setHours(index)}
-                style={styles.picker}
-            />
-            <WheelPicker
-                selectedItem={minutes}
-                data={Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'))}
-                onItemSelected={index => setMinutes(index)}
-                style={styles.picker}
-            />
-            <WheelPicker
-                selectedItem={seconds}
-                data={Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'))}
-                onItemSelected={index => setSeconds(index)}
-                style={styles.picker}
-            />
+        <Modal
+            isVisible={isModalVisible}
+            onBackdropPress={() => setIsModalVisible(false)}
+            style={styles.modal}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>타이머 수정</Text>
+            <View style={styles.timePickerContainer}>
+              {/* 휠 피커로 변경된 시간 설정 */}
+              <WheelPicker
+                  selectedItem={hours}
+                  data={Array.from({length: 100}, (_, i) => String(i).padStart(2, '0'))}
+                  onItemSelected={index => setHours(index)}
+                  style={styles.picker}
+              />
+              <WheelPicker
+                  selectedItem={minutes}
+                  data={Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'))}
+                  onItemSelected={index => setMinutes(index)}
+                  style={styles.picker}
+              />
+              <WheelPicker
+                  selectedItem={seconds}
+                  data={Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'))}
+                  onItemSelected={index => setSeconds(index)}
+                  style={styles.picker}
+              />
+            </View>
+            <View style={styles.switchContainer}>
+              <Text>소수점 표기</Text>
+              <Switch value={showDecimals} onValueChange={setShowDecimals} />
+            </View>
+            <View style={styles.modalButtons}>
+              <Button title="저장" onPress={saveTime} />
+              <Button
+                  title="취소"
+                  onPress={() => setIsModalVisible(false)}
+                  color="red"
+              />
+            </View>
+            <View style={styles.addTimeButtons}>
+              <Button title="10분 추가" onPress={() => addMinutes(10)} />
+              <Button title="1분 추가" onPress={() => addMinutes(1)} />
+            </View>
           </View>
-          <View style={styles.switchContainer}>
-            <Text>소수점 표기</Text>
-            <Switch value={showDecimals} onValueChange={setShowDecimals} />
-          </View>
-          <View style={styles.modalButtons}>
-            <Button title="저장" onPress={saveTime} />
-            <Button
-              title="취소"
-              onPress={() => setIsModalVisible(false)}
-              color="red"
-            />
-          </View>
-          <View style={styles.addTimeButtons}>
-            <Button title="10분 추가" onPress={() => addMinutes(10)} />
-            <Button title="1분 추가" onPress={() => addMinutes(1)} />
-          </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
   );
 });
 
@@ -314,20 +314,12 @@ const formatTime = (seconds, showDecimals) => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = showDecimals
-    ? (seconds % 60).toFixed(1)
-    : Math.floor(seconds % 60);
+      ? (seconds % 60).toFixed(1)
+      : Math.floor(seconds % 60);
 
   return hours > 0
-    ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${
-        showDecimals
-          ? String(secs).padStart(4, '0')
-          : String(secs).padStart(2, '0')
-      }`
-    : `${String(minutes).padStart(2, '0')}:${
-        showDecimals
-          ? String(secs).padStart(4, '0')
-          : String(secs).padStart(2, '0')
-      }`;
+      ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${showDecimals ? String(secs).padStart(4, '0') : String(secs).padStart(2, '0')}`
+      : `${String(minutes).padStart(2, '0')}:${showDecimals ? String(secs).padStart(4, '0') : String(secs).padStart(2, '0')}`;
 };
 
 const styles = StyleSheet.create({
