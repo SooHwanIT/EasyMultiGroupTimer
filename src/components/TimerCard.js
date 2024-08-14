@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import {Picker} from '@react-native-picker/picker';
 import { WheelPicker } from 'react-native-wheel-picker-android';
 
 
-const TimerCard = ({id, onDelete}) => {
+const TimerCard = forwardRef(({ id, onDelete }, ref) => {
   const [time, setTime] = useState(60);
   const [isRunning, setIsRunning] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
@@ -33,6 +33,12 @@ const TimerCard = ({id, onDelete}) => {
   const longPressDuration = 1000;
   const longPressTimerRef = useRef(null);
   const initialTime = useRef(60);
+
+  useImperativeHandle(ref, () => ({
+    startTimer,
+    pauseTimer,
+    resetTimer
+  }));
 
   useEffect(() => {
     let interval = null;
@@ -302,7 +308,7 @@ const TimerCard = ({id, onDelete}) => {
       </Modal>
     </View>
   );
-};
+});
 
 const formatTime = (seconds, showDecimals) => {
   const hours = Math.floor(seconds / 3600);

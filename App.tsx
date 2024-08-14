@@ -11,8 +11,8 @@ export default function App() {
   return (
     <NavigationContainer>
       <Tab.Navigator>
-      {/*  <Tab.Screen name="Group" component={GroupTimerScreen} />*/}
         <Tab.Screen name="Single" component={SingleTimerScreen} />
+        <Tab.Screen name="Group" component={GroupTimerScreen} />
         <Tab.Screen name="Temporary" component={TemporaryTimerScreen} />
       </Tab.Navigator>
     </NavigationContainer>
