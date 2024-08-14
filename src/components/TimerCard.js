@@ -12,12 +12,10 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import Modal from 'react-native-modal';
-import {Picker} from '@react-native-picker/picker';
 import { WheelPicker } from 'react-native-wheel-picker-android';
 
-
 const TimerCard = forwardRef(({ id, onDelete }, ref) => {
-  const [time, setTime] = useState(60);
+  const [time, setTime] = useState(60); // 타이머에 표시되는 시간
   const [isRunning, setIsRunning] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -27,60 +25,68 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [showDecimals, setShowDecimals] = useState(false);
-  const [pressStart, setPressStart] = useState(null);
+
   const isDragging = useRef(false); // Ref로 드래깅 상태 유지
   const pan = useRef(new Animated.ValueXY()).current;
   const longPressDuration = 1000;
   const longPressTimerRef = useRef(null);
-  const initialTime = useRef(60);
+  const pressStart = useRef(null);
+
+  const startTimeRef = useRef(null); // 타이머가 시작된 시점
+  const initialTime = useRef(60); // 타이머의 초기 설정 시간
+  const pauseTime = useRef(0); // 타이머가 멈춘 시점의 남은 시간
+  const animationFrameRef = useRef(null);
 
   useImperativeHandle(ref, () => ({
     startTimer,
     pauseTimer,
-    resetTimer
+    resetTimer,
   }));
 
-  useEffect(() => {
-    let interval = null;
+  const updateTimer = () => {
+    const now = Date.now();
+    const elapsedTime = (now - startTimeRef.current) / 1000; // 경과 시간 (초)
+    const remainingTime = Math.max(initialTime.current - elapsedTime, 0);
 
-    if (isRunning) {
-      interval = setInterval(() => {
-        setTime(prevTime => {
-          if (prevTime <= 0) {
-            clearInterval(interval);
-            setIsRunning(false);
-            return 0;
-          }
-          return (prevTime - 0.1).toFixed(1); // 0.1초씩 감소
-        });
-      }, 100); // 100ms마다 실행
+    setTime(remainingTime);
+
+    if (remainingTime > 0) {
+      animationFrameRef.current = requestAnimationFrame(updateTimer);
     } else {
-      clearInterval(interval);
+      setIsRunning(false);
     }
-
-    return () => clearInterval(interval);
-  }, [isRunning]);
+  };
 
   const startTimer = () => {
-    if (time > 0) {
-      setIsRunning(true);
+    if (pauseTime.current) {
+      startTimeRef.current = Date.now() - (initialTime.current - pauseTime.current) * 1000;
+      pauseTime.current = 0;
+    } else {
+      startTimeRef.current = Date.now();
     }
+    setIsRunning(true);
+    animationFrameRef.current = requestAnimationFrame(updateTimer);
   };
 
   const pauseTimer = () => {
     setIsRunning(false);
+    pauseTime.current = time; // 현재 남은 시간을 기록
+    cancelAnimationFrame(animationFrameRef.current);
   };
 
   const resetTimer = () => {
     setIsRunning(false);
     setTime(initialTime.current);
+    pauseTime.current = initialTime.current;
     setIsEnabled(false);
+    cancelAnimationFrame(animationFrameRef.current);
   };
 
   const saveTime = () => {
     const timeInSeconds = hours * 3600 + minutes * 60 + seconds;
     setTime(timeInSeconds);
     initialTime.current = timeInSeconds;
+    pauseTime.current = timeInSeconds;
     setIsModalVisible(false);
     setTimerName(nameInputValue);
   };
@@ -89,7 +95,6 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
     setIsEnabled(prev => !prev);
   };
 
-  // useEffect를 추가하여 isEnabled가 변경될 때마다 타이머를 제어
   useEffect(() => {
     if (isEnabled) {
       startTimer();
@@ -100,58 +105,40 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
 
   const handlePress = isPressIn => {
     if (isPressIn) {
-      console.log('Press in');
-      setPressStart(Date.now());
+      pressStart.current = Date.now();
       longPressTimerRef.current = setTimeout(() => {
         if (!isDragging.current) {
-          // Ref로 드래깅 상태 확인
           setIsModalVisible(true);
         }
       }, longPressDuration);
     } else {
       clearTimeout(longPressTimerRef.current);
-      const duration = Date.now() - pressStart;
-      console.log(
-          'Press out, duration:',
-          duration,
-          'isDragging:',
-          isDragging.current,
-      );
-
+      const duration = Date.now() - pressStart.current;
       if (!isDragging.current) {
-        // if (!isDragging.current && duration < longPressDuration) {
         toggleTimer();
       }
-
-      setPressStart(null);
+      pressStart.current = null;
     }
   };
 
   const panResponder = useRef(
       PanResponder.create({
-        onStartShouldSetPanResponder: () => {
-          console.log(
-              'onStartShouldSetPanResponder: 터치 시작 시 PanResponder 활성화 여부 결정',
-          );
-          return true;
-        },
+        onStartShouldSetPanResponder: () => true,
 
-        onMoveShouldSetPanResponder: (_, gestureState) =>
-            Math.abs(gestureState.dx) > 5,
+        onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 5,
 
         onPanResponderGrant: () => {
           isDragging.current = false;
-          handlePress(true); // Press In
+          handlePress(true);
           clearTimeout(longPressTimerRef.current);
           pan.setOffset({
             x: pan.x._value,
             y: pan.y._value,
           });
-          pan.setValue({x: 0, y: 0});
-          setPressStart(Date.now());
+          pan.setValue({ x: 0, y: 0 });
+          pressStart.current = Date.now();
           longPressTimerRef.current = setTimeout(() => {
             if (!isDragging.current) {
-              // Ref로 드래깅 상태 확인
               setIsModalVisible(true);
             }
             isDragging.current = true;
@@ -159,30 +146,23 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
         },
 
         onPanResponderMove: (_, gestureState) => {
-          isDragging.current = true; // Ref로 드래깅 상태 설정
-          console.log(
-              'onPanResponderMove: PanResponder 이동 isDragging : ',
-              isDragging.current,
-          );
+          isDragging.current = true;
           const dragX = Math.max(-80, Math.min(80, gestureState.dx));
-          pan.setValue({x: dragX, y: 0});
+          pan.setValue({ x: dragX, y: 0 });
         },
 
         onPanResponderRelease: (e, gestureState) => {
-          console.log('onPanResponderRelease: PanResponder 해제');
-          handlePress(false); // Press Out
+          handlePress(false);
           pan.flattenOffset();
 
           if (gestureState.dx < -100) {
-            console.log('Swiped left, calling onDelete');
             onDelete(id);
           } else if (gestureState.dx > 100) {
-            console.log('Swiped right, calling resetTimer');
             resetTimer();
           }
 
           Animated.spring(pan, {
-            toValue: {x: 0, y: 0},
+            toValue: { x: 0, y: 0 },
             friction: 7,
             tension: 40,
             useNativeDriver: false,
@@ -190,19 +170,10 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
         },
 
         onPanResponderTerminate: () => {
-          console.log('onPanResponderTerminate: PanResponder 종료');
-          handlePress(false); // Press Out
+          handlePress(false);
         },
 
-        onPanResponderTerminationRequest: () => {
-          console.log('onPanResponderTerminationRequest: PanResponder 종료 요청');
-          return true;
-        },
-
-        // onShouldBlockNativeResponder: () => {
-        //     console.log('onShouldBlockNativeResponder: 네이티브 리스너 이벤트 차단 여부 결정');
-        //     return false;
-        // },
+        onPanResponderTerminationRequest: () => true,
       }),
   ).current;
 
