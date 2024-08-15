@@ -33,7 +33,7 @@ function SingleTimerScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
+    padding: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },

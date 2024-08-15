@@ -28,7 +28,7 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
 
   const isDragging = useRef(false); // Ref로 드래깅 상태 유지
   const pan = useRef(new Animated.ValueXY()).current;
-  const longPressDuration = 1000;
+  const longPressDuration = 750;
   const longPressTimerRef = useRef(null);
   const pressStart = useRef(null);
 
@@ -58,6 +58,8 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
   };
 
   const startTimer = () => {
+    if (isRunning) return;
+
     if (pauseTime.current) {
       startTimeRef.current = Date.now() - (initialTime.current - pauseTime.current) * 1000;
       pauseTime.current = 0;
@@ -69,6 +71,8 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
   };
 
   const pauseTimer = () => {
+    if (!isRunning) return;
+
     setIsRunning(false);
     pauseTime.current = time; // 현재 남은 시간을 기록
     cancelAnimationFrame(animationFrameRef.current);
@@ -192,13 +196,18 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
       <View style={styles.container}>
         <Animated.View
             {...panResponder.panHandlers}
-            style={[styles.card, {transform: pan.getTranslateTransform()}]}>
+            style={[
+              styles.card,
+              isRunning && styles.runningCard, // isRunning이 true일 때 runningCard 스타일을 적용
+              { transform: pan.getTranslateTransform() },
+            ]}
+        >
           <View style={styles.cardContent}>
             <Text
                 style={styles.timeText}
                 adjustsFontSizeToFit
-                numberOfLines={1} // 한 줄로 유지
-                minimumFontScale={0.5} // 폰트 크기 조정 시 최소 크기 설정
+                numberOfLines={1}
+                minimumFontScale={0.5}
             >
               {formatTime(time, showDecimals)}
             </Text>
@@ -215,8 +224,9 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
             style={[
               styles.actionContainer,
               styles.refreshContainer,
-              {opacity: refreshIconOpacity},
-            ]}>
+              { opacity: refreshIconOpacity },
+            ]}
+        >
           <Icon name="refresh-cw" size={24} color="#007BFF" />
         </Animated.View>
 
@@ -224,35 +234,42 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
             style={[
               styles.actionContainer,
               styles.deleteContainer,
-              {opacity: deleteIconOpacity},
-            ]}>
+              { opacity: deleteIconOpacity },
+            ]}
+        >
           <Icon name="trash-2" size={24} color="red" />
         </Animated.View>
 
         <Modal
             isVisible={isModalVisible}
             onBackdropPress={() => setIsModalVisible(false)}
-            style={styles.modal}>
+            style={styles.modal}
+        >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>타이머 수정</Text>
             <View style={styles.timePickerContainer}>
-              {/* 휠 피커로 변경된 시간 설정 */}
               <WheelPicker
                   selectedItem={hours}
-                  data={Array.from({length: 100}, (_, i) => String(i).padStart(2, '0'))}
-                  onItemSelected={index => setHours(index)}
+                  data={Array.from({ length: 100 }, (_, i) =>
+                      String(i).padStart(2, "0")
+                  )}
+                  onItemSelected={(index) => setHours(index)}
                   style={styles.picker}
               />
               <WheelPicker
                   selectedItem={minutes}
-                  data={Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'))}
-                  onItemSelected={index => setMinutes(index)}
+                  data={Array.from({ length: 60 }, (_, i) =>
+                      String(i).padStart(2, "0")
+                  )}
+                  onItemSelected={(index) => setMinutes(index)}
                   style={styles.picker}
               />
               <WheelPicker
                   selectedItem={seconds}
-                  data={Array.from({length: 60}, (_, i) => String(i).padStart(2, '0'))}
-                  onItemSelected={index => setSeconds(index)}
+                  data={Array.from({ length: 60 }, (_, i) =>
+                      String(i).padStart(2, "0")
+                  )}
+                  onItemSelected={(index) => setSeconds(index)}
                   style={styles.picker}
               />
             </View>
@@ -276,6 +293,7 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
         </Modal>
       </View>
   );
+
 });
 
 const formatTime = (seconds, showDecimals) => {
@@ -289,7 +307,6 @@ const formatTime = (seconds, showDecimals) => {
       ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${showDecimals ? String(secs).padStart(4, '0') : String(secs).padStart(2, '0')}`
       : `${String(minutes).padStart(2, '0')}:${showDecimals ? String(secs).padStart(4, '0') : String(secs).padStart(2, '0')}`;
 };
-
 const styles = StyleSheet.create({
   container: {
     width: '100%',
@@ -299,15 +316,27 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingVertical: 10,
     paddingHorizontal: 15,
-    marginVertical: 10,
+    marginVertical: 6,
     borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
+    // shadowColor: '#000',
+    // // shadowOffset: { width: 0, height: 1 },
+    // shadowOpacity: 0.2, // 그림자 진하게 수정
+    // shadowRadius: 6, // 그림자 퍼짐 정도 조정
+    // elevation: 2,
     zIndex: 1,
   },
+  runningCard: {
+    borderColor: '#0eb242',
+    borderWidth: 1,
+    marginVertical: 5,
+    margin: -1,  // 보더 너비와 동일한 음수 마진 적용
+    // shadowColor: '#00d24a',
+    // // shadowOffset: { width: 0, height: 1 },
+    // shadowOpacity: 0.2,
+    // shadowRadius: 2,
+    // elevation: 2,
+  },
+
   cardContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -342,10 +371,10 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 6,
     marginVertical: 10,
     justifyContent: 'center',
     alignItems: 'center',
