@@ -254,7 +254,14 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
             style={styles.modal}
         >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>타이머 수정</Text>
+            {/*<Text style={styles.modalTitle}>타이머 수정</Text>*/}
+            <TextInput
+                style={styles.timerNameInput}
+                value={nameInputValue}
+                onChangeText={setNameInputValue}
+                placeholder="타이머 이름"
+            />
+
             <View style={styles.timePickerContainer}>
               <WheelPicker
                   selectedItem={hours}
@@ -263,6 +270,8 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
                   )}
                   onItemSelected={(index) => setHours(index)}
                   style={styles.picker}
+                  itemTextSize={24}
+                  selectedItemTextSize={28}
               />
               <WheelPicker
                   selectedItem={minutes}
@@ -271,6 +280,8 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
                   )}
                   onItemSelected={(index) => setMinutes(index)}
                   style={styles.picker}
+                  itemTextSize={24}
+                  selectedItemTextSize={28}
               />
               <WheelPicker
                   selectedItem={seconds}
@@ -279,6 +290,8 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
                   )}
                   onItemSelected={(index) => setSeconds(index)}
                   style={styles.picker}
+                  itemTextSize={24}
+                  selectedItemTextSize={28}
               />
             </View>
             <View style={styles.switchContainer}>
@@ -286,16 +299,21 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
               <Switch value={showDecimals} onValueChange={setShowDecimals} />
             </View>
             <View style={styles.modalButtons}>
-              <Button title="저장" onPress={saveTime} />
-              <Button
-                  title="취소"
-                  onPress={() => setIsModalVisible(false)}
-                  color="red"
-              />
+              <TouchableOpacity
+                  style={[styles.button,styles.saveButton]}
+                  onPress={saveTime}>
+                <Text style={styles.buttonText}>저장</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                  style={[styles.button, styles.cancelButton]}
+                  onPress={() => setIsModalVisible(false)}>
+              <Text style={styles.buttonText}>취소</Text>
+            </TouchableOpacity>
             </View>
+
             <View style={styles.addTimeButtons}>
-              <Button title="10분 추가" onPress={() => addMinutes(10)} />
-              <Button title="1분 추가" onPress={() => addMinutes(1)} />
+              {/*<Button title="10분 추가" onPress={() => addMinutes(10)} />*/}
+              {/*<Button title="1분 추가" onPress={() => addMinutes(1)} />*/}
             </View>
           </View>
         </Modal>
@@ -411,18 +429,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 20,
-    marginBottom: 15,
+    fontSize: 24,  // 폰트 크기 키움fontWeight: '600',
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    width: '100%',
+    textAlign: 'center',
   },
   timePickerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    marginBottom: 15,
+    marginVertical: 15,
+
   },
   picker: {
     width: '30%',
-    height: 150,
+    height: 180,  // 높이 조정 (크기 키움)
+  },
+  timerNameInput: {
+    fontSize: 24,  // 타이머 이름 입력 필드의 폰트 크기 키움fontWeight: '600',
+    marginBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    textAlign: 'center',
+    width: '100%',
   },
   switchContainer: {
     flexDirection: 'row',
@@ -435,12 +466,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
+    marginTop: 20,
   },
   addTimeButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
     marginTop: 15,
+  },
+  button: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 10,  // 보더 라운드 추가marginHorizontal: 5,
+    alignItems: 'center',
+    backgroundColor: '#E0E0E0', // 배경 채도를 낮춰서 가독성 높임
+  },
+
+  saveButton: {
+    backgroundColor: '#B0E57C', // 채도가 낮은 초록색 배경
+  },
+
+  cancelButton: {
+    backgroundColor: '#FFCCCB', // 채도가 낮은 빨간색 배경
+  },
+
+  buttonText: {
+    color: '#000000',  // 검정색 글씨fontSize: 18,      // 글씨 크기 키움fontWeight: '600',
   },
 });
 
