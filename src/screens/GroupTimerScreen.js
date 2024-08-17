@@ -24,9 +24,7 @@ function GroupTimerScreen() {
     };
 
     const renderItem = ({ item }) => (
-        <View style={styles.groupContainer}>
             <GroupTimerCard id = {item.id} handleDeleteGroup={handleDeleteGroup}/>
-        </View>
     );
 
     return (
@@ -48,19 +46,9 @@ function GroupTimerScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 10,
+        padding: 2,
         paddingVertical: 20,
         backgroundColor: '#f0f0f0',
-    },
-    groupContainer: {
-        marginBottom: 20,
-        borderRadius: 10,
-        backgroundColor: '#fff',
-        // shadowColor: '#000',
-        // shadowOffset: { width: 0, height: 2 },
-        // shadowOpacity: 0.1,
-        // shadowRadius: 5,
-        // elevation: 2,
     },
     fab: {
         position: 'absolute',

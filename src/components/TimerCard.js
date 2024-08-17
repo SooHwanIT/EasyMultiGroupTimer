@@ -13,6 +13,8 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import Modal from 'react-native-modal';
 import { WheelPicker } from 'react-native-wheel-picker-android';
+import { AnimatedCircularProgress } from 'react-native-circular-progress';
+import CircularProgress from "./CircularProgress";
 
 const TimerCard = forwardRef(({ id, onDelete }, ref) => {
   const [time, setTime] = useState(60); // 타이머에 표시되는 시간
@@ -192,6 +194,10 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
     outputRange: [1, 0],
     extrapolate: 'clamp',
   });
+
+
+  const progress = (time / initialTime.current) * 100;
+
   return (
       <View style={styles.container}>
         <Animated.View
@@ -217,6 +223,8 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
                 {formatTime(initialTime.current, showDecimals)}
               </Text>
             </View>
+
+            {/*<CircularProgress progress={progress}/>*/}
           </View>
         </Animated.View>
 
@@ -318,23 +326,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginVertical: 6,
     borderRadius: 10,
-    // shadowColor: '#000',
-    // // shadowOffset: { width: 0, height: 1 },
-    // shadowOpacity: 0.2, // 그림자 진하게 수정
-    // shadowRadius: 6, // 그림자 퍼짐 정도 조정
-    // elevation: 2,
+    shadowColor: '#000',
+    // shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2, // 그림자 진하게 수정
+    shadowRadius: 6, // 그림자 퍼짐 정도 조정
+    elevation: 2,
     zIndex: 1,
   },
   runningCard: {
-    borderColor: '#0eb242',
+
+    backgroundColor: 'rgb(235,242,255)',
+    borderColor: '#000000',
     borderWidth: 1,
     marginVertical: 5,
     margin: -1,  // 보더 너비와 동일한 음수 마진 적용
-    // shadowColor: '#00d24a',
-    // // shadowOffset: { width: 0, height: 1 },
-    // shadowOpacity: 0.2,
-    // shadowRadius: 2,
-    // elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 }, // 음각 효과를 주기 위해 그림자를 위로 이동
+    shadowOpacity: 0.3, // 그림자를 조금 더 진하게
+    shadowRadius: 4,    // 그림자 퍼짐 정도를 줄여서 더 선명한 음각 효과
+    elevation: 4,       // 음각 효과를 더 높게
   },
 
   cardContent: {
