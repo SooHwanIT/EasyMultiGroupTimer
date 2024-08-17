@@ -13,8 +13,6 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import Modal from 'react-native-modal';
 import { WheelPicker } from 'react-native-wheel-picker-android';
-import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import CircularProgress from "./CircularProgress";
 
 const TimerCard = forwardRef(({ id, onDelete }, ref) => {
   const [time, setTime] = useState(60); // 타이머에 표시되는 시간
@@ -45,6 +43,7 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
     resetTimer,
   }));
 
+
   const updateTimer = () => {
     const now = Date.now();
     const elapsedTime = (now - startTimeRef.current) / 1000; // 경과 시간 (초)
@@ -56,6 +55,9 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
       animationFrameRef.current = requestAnimationFrame(updateTimer);
     } else {
       setIsRunning(false);
+      setTime(0);
+      // playAlarm(); // 알람음 재생
+      // 배경색을 연한 붉은색으로 변경
     }
   };
 

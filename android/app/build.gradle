@@ -51,6 +51,7 @@ dependencies {
         implementation jscFlavor
     }
 
+    implementation project(':react-native-sound')
     implementation project(':react-native-vector-icons')
 }
 

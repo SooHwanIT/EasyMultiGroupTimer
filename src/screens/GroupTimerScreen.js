@@ -48,7 +48,8 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 2,
         paddingVertical: 20,
-        backgroundColor: '#f0f0f0',
+
+        backgroundColor: '#f0f4f8',
     },
     fab: {
         position: 'absolute',
