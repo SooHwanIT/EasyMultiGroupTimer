@@ -10,12 +10,15 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-async-storage/async-storage": "1.24.0",
     "@react-native-picker/picker": "2.7.7",
     "@react-navigation/bottom-tabs": "^6.6.1",
     "@react-navigation/native": "^6.1.18",
     "@react-navigation/stack": "^6.4.1",
     "@rneui/base": "^0.0.0-edge.2",
     "@rneui/themed": "^0.0.0-edge.2",
+    "patch-package": "8.0.0",
+    "postinstall-postinstall": "2.1.0",
     "react": "18.2.0",
     "react-native": "0.74.4",
     "react-native-elements": "^3.4.3",

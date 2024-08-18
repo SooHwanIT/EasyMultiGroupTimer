@@ -13,6 +13,8 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import Modal from 'react-native-modal';
 import { WheelPicker } from 'react-native-wheel-picker-android';
+import Sound from 'react-native-sound';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TimerCard = forwardRef(({ id, onDelete }, ref) => {
   const [time, setTime] = useState(60); // 타이머에 표시되는 시간
@@ -43,6 +45,60 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
     resetTimer,
   }));
 
+  useEffect(() => {
+    // AsyncStorage에서 저장된 상태를 불러옵니다.
+    const loadTimerState = async () => {
+      try {
+        const savedState = await AsyncStorage.getItem(`timerState_${id}`);
+        if (savedState) {
+          const { savedTime, savedInitialTime, savedPauseTime, savedIsEnabled, savedTimerName, savedShowDecimals } = JSON.parse(savedState);
+          setTime(savedTime);
+          initialTime.current = savedInitialTime;
+          pauseTime.current = savedPauseTime;
+          setIsEnabled(savedIsEnabled);
+          setTimerName(savedTimerName);
+          setShowDecimals(savedShowDecimals);
+        }
+      } catch (e) {
+        console.log('Failed to load timer state', e);
+      }
+    };
+
+    loadTimerState();
+  }, [id]);
+
+  const saveTimerState = async () => {
+    try {
+      const state = {
+        savedTime: time,
+        savedInitialTime: initialTime.current,
+        savedPauseTime: pauseTime.current,
+        savedIsEnabled: isEnabled,
+        savedTimerName: timerName,
+        savedShowDecimals: showDecimals,
+      };
+      await AsyncStorage.setItem(`timerState_${id}`, JSON.stringify(state));
+    } catch (e) {
+      console.log('Failed to save timer state', e);
+    }
+  };
+
+  const playAlarm = () => {
+    const alarmSound = new Sound('alarm.mp3', Sound.MAIN_BUNDLE, (error) => {
+      if (error) {
+        console.log('Failed to load the sound', error);
+        return;
+      }
+      alarmSound.play((success) => {
+        if (!success) {
+          console.log('Sound playback failed');
+        }
+        alarmSound.release(); // 메모리 해제를 위해 사운드를 해제합니다.
+      });
+    });
+  };
+
+
 
   const updateTimer = () => {
     const now = Date.now();
@@ -56,8 +112,8 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
     } else {
       setIsRunning(false);
       setTime(0);
-      // playAlarm(); // 알람음 재생
-      // 배경색을 연한 붉은색으로 변경
+      playAlarm(); // 타이머가 0초일 때 알람 사운드 재생
+      saveTimerState();
     }
   };
 
@@ -72,6 +128,7 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
     }
     setIsRunning(true);
     animationFrameRef.current = requestAnimationFrame(updateTimer);
+    saveTimerState();
   };
 
   const pauseTimer = () => {
@@ -80,6 +137,7 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
     setIsRunning(false);
     pauseTime.current = time; // 현재 남은 시간을 기록
     cancelAnimationFrame(animationFrameRef.current);
+    saveTimerState();
   };
 
   const resetTimer = () => {
@@ -88,6 +146,7 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
     pauseTime.current = initialTime.current;
     setIsEnabled(false);
     cancelAnimationFrame(animationFrameRef.current);
+    saveTimerState(); // 타이머 리셋 시 상태 저장
   };
 
   const saveTime = () => {
@@ -97,6 +156,7 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
     pauseTime.current = timeInSeconds;
     setIsModalVisible(false);
     setTimerName(nameInputValue);
+    saveTimerState(); // 타이머 설정 변경 시 상태 저장
   };
 
   const toggleTimer = () => {
@@ -206,7 +266,7 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
             {...panResponder.panHandlers}
             style={[
               styles.card,
-              isRunning && styles.runningCard, // isRunning이 true일 때 runningCard 스타일을 적용
+              time === 0 ? styles.completedCard : isRunning && styles.runningCard, // 조건부 스타일 적용
               { transform: pan.getTranslateTransform() },
             ]}
         >
@@ -366,7 +426,18 @@ const styles = StyleSheet.create({
     shadowRadius: 4,    // 그림자 퍼짐 정도를 줄여서 더 선명한 음각 효과
     elevation: 4,       // 음각 효과를 더 높게
   },
-
+  completedCard:{
+    backgroundColor: 'rgb(255,235,238)',
+    borderColor: '#000000',
+    borderWidth: 1,
+    marginVertical: 5,
+    margin: -1,  // 보더 너비와 동일한 음수 마진 적용
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 }, // 음각 효과를 주기 위해 그림자를 위로 이동
+    shadowOpacity: 0.3, // 그림자를 조금 더 진하게
+    shadowRadius: 4,    // 그림자 퍼짐 정도를 줄여서 더 선명한 음각 효과
+    elevation: 4,       // 음각 효과를 더 높게
+  },
   cardContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',

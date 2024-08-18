@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   ScrollView,
-  Button,
   LayoutAnimation,
   Platform,
   UIManager,
-  TouchableOpacity
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import TimerCard from '../components/TimerCard';
 import UUID from 'react-native-uuid';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -18,32 +19,64 @@ if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-function SingleTimerScreen() {
-  const [timers, setTimers] = useState([UUID.v4()]);
+const STORAGE_KEY = 'SINGLE_TIMER_DATA';  // 저장할 데이터의 키
 
+function SingleTimerScreen() {
+  const [timers, setTimers] = useState([]);
+
+  // 앱 시작 시 저장된 데이터를 불러옴
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const savedTimers = await AsyncStorage.getItem(STORAGE_KEY);
+        if (savedTimers) {
+          setTimers(JSON.parse(savedTimers));
+        }
+      } catch (error) {
+        Alert.alert('Error', 'Failed to load timers.');
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // 타이머 추가
   const addTimer = () => {
     const newId = UUID.v4();
-    setTimers(prevTimers => [...prevTimers, newId]);
+    const newTimers = [...timers, newId];
+    setTimers(newTimers);
+    saveData(newTimers);  // 데이터를 저장
   };
 
-  const deleteTimer = id => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); // 애니메이션 설정
-    setTimers(prevTimers => prevTimers.filter(timerId => timerId !== id));
+  // 타이머 삭제
+  const deleteTimer = (id) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    const newTimers = timers.filter(timerId => timerId !== id);
+    setTimers(newTimers);
+    saveData(newTimers);  // 데이터를 저장
+  };
+
+  // 데이터 저장
+  const saveData = async (data) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save timers.');
+    }
   };
 
   return (
       <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-      {timers.map(id => (
-        <TimerCard key={id} id={id} onDelete={() => deleteTimer(id)} />
-      ))}
-
-    </ScrollView>
-  {/* 타이머 추가 버튼 */}
-  <TouchableOpacity style={styles.addButton} onPress={addTimer}>
-    <Icon name="add" size={30} color="#000000" />
-  </TouchableOpacity>
-</View>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {timers.map(id => (
+              <TimerCard key={id} id={id} onDelete={() => deleteTimer(id)} />
+          ))}
+        </ScrollView>
+        {/* 타이머 추가 버튼 */}
+        <TouchableOpacity style={styles.addButton} onPress={addTimer}>
+          <Icon name="add" size={30} color="#000000" />
+        </TouchableOpacity>
+      </View>
   );
 }
 

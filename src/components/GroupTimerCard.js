@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, LayoutAnimation, Platform, UIManager } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, FlatList, LayoutAnimation, Platform, UIManager, Alert } from 'react-native';
 import UUID from 'react-native-uuid';  // UUID 패키지 임포트
 import TimerCard from './TimerCard';
 import Modal from 'react-native-modal'; // 모달 패키지 임포트
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Entypo'; // 세로 점 3개 아이콘을 위한 패키지
 
 // LayoutAnimation 설정 (Android에서 사용하려면 UIManager 설정 필요)
@@ -28,6 +29,34 @@ const GroupTimerCard = ({ id, handleDeleteGroup }) => {
 
     // 각 타이머에 대한 Ref 배열을 생성합니다.
     const timerRefs = useRef([]);
+
+    useEffect(() => {
+        loadGroupData();
+    }, []);
+
+    // 그룹 데이터 불러오기
+    const loadGroupData = async () => {
+        try {
+            const savedGroupData = await AsyncStorage.getItem(`GROUP_TIMER_${id}`);
+            if (savedGroupData) {
+                const parsedData = JSON.parse(savedGroupData);
+                setTimers(parsedData.timers);
+                setGroupName(parsedData.groupName);
+                setNameInputValue(parsedData.groupName);  // 수정 가능한 입력 필드에 값 설정
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to load group data.');
+        }
+    };
+
+    // 그룹 데이터 저장
+    const saveGroupData = async (data) => {
+        try {
+            await AsyncStorage.setItem(`GROUP_TIMER_${id}`, JSON.stringify(data));
+        } catch (error) {
+            Alert.alert('Error', 'Failed to save group data.');
+        }
+    };
 
     const handleStartAll = () => {
         const startAllTimers = () => {
@@ -67,16 +96,21 @@ const GroupTimerCard = ({ id, handleDeleteGroup }) => {
 
     const handleDeleteTimer = id => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); // 애니메이션 설정
-        setTimers(prevTimers => prevTimers.filter(timerId => timerId.id !== id));
+        const updatedTimers = timers.filter(timerId => timerId.id !== id);
+        setTimers(updatedTimers);
+        saveGroupData({ timers: updatedTimers, groupName });  // 타이머 삭제 후 데이터 저장
     };
 
     const handleAddTimer = () => {
         const newTimer = { id: UUID.v4() };  // UUID로 고유한 ID 생성
-        setTimers([...timers, newTimer]);
+        const updatedTimers = [...timers, newTimer];
+        setTimers(updatedTimers);
+        saveGroupData({ timers: updatedTimers, groupName });  // 타이머 추가 후 데이터 저장
     };
 
     const handleSaveGroupName = () => {
         setGroupName(nameInputValue);
+        saveGroupData({ timers, groupName: nameInputValue });  // 그룹 이름 수정 후 데이터 저장
     };
 
     const renderItem = ({ item, index }) => (
