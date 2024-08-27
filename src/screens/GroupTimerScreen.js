@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Text } from 'react-native';
-import UUID from 'react-native-uuid';  // UUID 패키지 임포트
-import AsyncStorage from '@react-native-async-storage/async-storage'; // AsyncStorage 임포트
+import { View, StyleSheet, FlatList, TouchableOpacity, Alert, Text, Modal, Pressable } from 'react-native';
+import UUID from 'react-native-uuid';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import GroupTimerCard from '../components/GroupTimerCard';
+import LinearGradient from 'react-native-linear-gradient';
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 function GroupTimerScreen() {
     const [groups, setGroups] = useState([]);
+    const [modalVisible, setModalVisible] = useState(false);  // 모달 가시성 상태
 
-    // 초기 로드 시 저장된 그룹 데이터 불러오기
     useEffect(() => {
         loadGroups();
     }, []);
 
-    // 그룹 데이터 불러오기
     const loadGroups = async () => {
         try {
             const savedGroups = await AsyncStorage.getItem('GROUPS');
@@ -24,7 +25,6 @@ function GroupTimerScreen() {
         }
     };
 
-    // 그룹 데이터 저장
     const saveGroups = async (updatedGroups) => {
         try {
             await AsyncStorage.setItem('GROUPS', JSON.stringify(updatedGroups));
@@ -34,10 +34,10 @@ function GroupTimerScreen() {
     };
 
     const handleAddGroup = () => {
-        const newGroup = { id: UUID.v4() };  // UUID로 고유한 ID 생성
+        const newGroup = { id: UUID.v4() };
         const updatedGroups = [...groups, newGroup];
         setGroups(updatedGroups);
-        saveGroups(updatedGroups);  // 그룹 추가 후 데이터 저장
+        saveGroups(updatedGroups);
     };
 
     const handleDeleteGroup = id => {
@@ -51,7 +51,7 @@ function GroupTimerScreen() {
                     onPress: () => {
                         const updatedGroups = groups.filter(group => group.id !== id);
                         setGroups(updatedGroups);
-                        saveGroups(updatedGroups);  // 그룹 삭제 후 데이터 저장
+                        saveGroups(updatedGroups);
                     }
                 },
             ],
@@ -64,18 +64,53 @@ function GroupTimerScreen() {
     );
 
     return (
-        <View style={styles.container}>
+        <LinearGradient
+            colors={['#f0f4f8', '#ffffff']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.container}
+        >
             <FlatList
                 data={groups}
                 renderItem={renderItem}
                 keyExtractor={item => item.id}
             />
 
+            {/* 사용법 안내 모달 */}
+            <Modal
+                animationType="slide"
+                transparent={true}
+                visible={modalVisible}
+                onRequestClose={() => setModalVisible(!modalVisible)}
+            >
+                <View style={styles.centeredView}>
+                    <View style={styles.modalView}>
+                        <Text style={styles.modalText}>타이머 사용법</Text>
+                        <Text style={styles.instructionText}>• 타이머 카드를 클릭하여 시작 및 정지</Text>
+                        <Text style={styles.instructionText}>• 왼쪽으로 드래그하여 초기화</Text>
+                        <Text style={styles.instructionText}>• 오른쪽으로 드래그하여 삭제</Text>
+                        <Text style={styles.instructionText}>• 타이머를 길게 눌러 수정</Text>
+
+                        <Pressable
+                            style={[styles.button, styles.buttonClose]}
+                            onPress={() => setModalVisible(!modalVisible)}
+                        >
+                            <Text style={styles.textStyle}>닫기</Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </Modal>
+
             {/* 플로팅 액션 버튼 */}
-            <TouchableOpacity style={styles.fab} onPress={handleAddGroup}>
-                <Text style={styles.fabIcon}>+</Text>
+
+            <TouchableOpacity style={styles.addButton} onPress={handleAddGroup}>
+                <Icon name="add" size={30} color="#000000" />
             </TouchableOpacity>
-        </View>
+            {/* 사용법 버튼 */}
+            <TouchableOpacity style={styles.helpButton} onPress={() => setModalVisible(true)}>
+                <Text style={styles.helpButtonText}>?</Text>
+            </TouchableOpacity>
+        </LinearGradient>
     );
 }
 
@@ -84,13 +119,29 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 2,
         paddingVertical: 20,
-        backgroundColor: '#f0f4f8',
     },
-    fab: {
+    addButton: {
         position: 'absolute',
-        width: 56,
-        height: 56,
-        borderRadius: 28,
+        bottom: 20,
+        right: 20,
+        backgroundColor: '#ffffff',
+        padding: 15,
+        borderRadius: 30,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    fabIcon: {
+        fontSize: 24,
+        color: '#000',
+    },
+    helpButton: {
+        position: 'absolute',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#fff',
         justifyContent: 'center',
         alignItems: 'center',
@@ -99,12 +150,54 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 4,
-        right: 20,
+        left: 20,
         bottom: 20,
     },
-    fabIcon: {
+    helpButtonText: {
         fontSize: 24,
         color: '#000',
+    },
+    centeredView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 22,
+    },
+    modalView: {
+        margin: 20,
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 35,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    button: {
+        borderRadius: 20,
+        padding: 10,
+        elevation: 2,
+    },
+    buttonClose: {
+        backgroundColor: '#2196F3',
+    },
+    textStyle: {
+        color: 'white',
+        fontWeight: 'bold',
+        textAlign: 'center',
+    },
+    modalText: {
+        marginBottom: 15,
+        textAlign: 'center',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    instructionText: {
+        marginBottom: 5,
+        textAlign: 'center',
+        fontSize: 16,
     },
 });
 
