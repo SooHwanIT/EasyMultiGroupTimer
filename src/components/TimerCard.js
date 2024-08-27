@@ -193,7 +193,7 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
 
-        onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 5,
+        onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 1,
 
         onPanResponderGrant: () => {
           isDragging.current = false;
@@ -214,9 +214,13 @@ const TimerCard = forwardRef(({ id, onDelete }, ref) => {
         },
 
         onPanResponderMove: (_, gestureState) => {
-          isDragging.current = true;
+
           const dragX = Math.max(-80, Math.min(80, gestureState.dx));
           pan.setValue({ x: dragX, y: 0 });
+          if (Math.abs(gestureState.dx) > 10) {
+            console.log(gestureState.dx)
+            isDragging.current = true;
+          }
         },
 
         onPanResponderRelease: (e, gestureState) => {
